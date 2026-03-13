@@ -6,7 +6,7 @@ import { Role } from '@prisma/client';
 export class AuthResponseDto {
   @ApiProperty({
     description: 'The access token for the user',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ98...',
   })
   accessToken: string;
 
