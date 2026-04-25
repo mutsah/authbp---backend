@@ -231,7 +231,7 @@ export class AuthService {
       });
 
       // Send email after confirming database save
-      await this.mailService.sendOtp(
+      await this.mailService.sendResetPasswordLink(
         email,
         resetToken,
         user.firstName || 'User',
