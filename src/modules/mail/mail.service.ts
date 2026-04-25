@@ -20,10 +20,14 @@ export class MailService {
     });
   }
 
-  async sendOtp(to: string, token: string, firstName: string): Promise<void> {
+  async sendResetPasswordLink(
+    to: string,
+    token: string,
+    firstName: string,
+  ): Promise<void> {
     const from = this.configService.get<string>('SMTP_FROM');
 
-    const url = `${this.configService.get<string>('APP_URL')}/reset-password?token=${token}`;
+    const url = `${this.configService.get<string>('APP_URL')}reset-password?token=${token}`;
 
     await this.transporter.sendMail({
       from: `"Mutsah" <${from}>`,
@@ -45,6 +49,6 @@ export class MailService {
       `,
     });
 
-    this.logger.log(`OTP email sent to ${to}`);
+    this.logger.log(`Reset password email sent to ${to}`);
   }
 }
