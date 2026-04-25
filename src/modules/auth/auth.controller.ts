@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -19,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
@@ -28,12 +30,15 @@ import { LoginDto } from './dto/login.dto';
 import { SendResetLinkDto } from './dto/send-reset-link.dto';
 import { VerifyTokenDto } from './dto/verify-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { Request } from 'express';
+import type { Request, Response } from 'express';
 import { OAuthUser } from './interfaces/oauth-user.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -47,8 +52,24 @@ export class AuthController {
   @ApiExcludeEndpoint()
   async googleCallback(
     @Req() req: Request & { user: OAuthUser },
-  ): Promise<AuthResponseDto> {
-    return await this.authService.oauthLogin(req.user);
+    @Res() res: Response,
+  ) {
+    const result = await this.authService.oauthLogin(req.user);
+    const frontendBase = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const frontendUrl = `${frontendBase}/oauth-success`;
+    const params = new URLSearchParams({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      id: result.user.id,
+      email: result.user.email,
+      firstName: result.user.firstName || '',
+      lastName: result.user.lastName || '',
+      role: result.user.role,
+    });
+    res.redirect(`${frontendUrl}?${params.toString()}`);
   }
 
   @Get('github')
@@ -63,13 +84,29 @@ export class AuthController {
   @ApiExcludeEndpoint()
   async githubCallback(
     @Req() req: Request & { user: OAuthUser },
-  ): Promise<AuthResponseDto> {
-    return await this.authService.oauthLogin(req.user);
+    @Res() res: Response,
+  ) {
+    const result = await this.authService.oauthLogin(req.user);
+    const frontendBase = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
+    const frontendUrl = `${frontendBase}/oauth-success`;
+    const params = new URLSearchParams({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      id: result.user.id,
+      email: result.user.email,
+      firstName: result.user.firstName || '',
+      lastName: result.user.lastName || '',
+      role: result.user.role,
+    });
+    res.redirect(`${frontendUrl}?${params.toString()}`);
   }
 
   // register api
   @Post('register')
-  @HttpCode(201)
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Register a new user',
     description: 'Create a new user account',
@@ -96,7 +133,7 @@ export class AuthController {
     return await this.authService.register(registerDto);
   }
 
-  //   refresh access token
+  // refresh access token
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshTokenGuard)
@@ -122,7 +159,7 @@ export class AuthController {
     return await this.authService.refreshTokens(userId);
   }
 
-  // logout
+  // login
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
