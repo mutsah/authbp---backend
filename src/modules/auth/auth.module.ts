@@ -7,9 +7,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { MailModule } from '../mail/mail.module';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GithubStrategy } from './strategies/github.strategy';
 
 @Module({
   imports: [
+    PrismaModule,
+    MailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -21,7 +26,13 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    GoogleStrategy,
+    GithubStrategy,
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {}

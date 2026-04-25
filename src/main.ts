@@ -32,8 +32,8 @@ async function bootstrap() {
 
   // enable swagger docs
   const config = new DocumentBuilder()
-    .setTitle('E-commerce API')
-    .setDescription('API documentation for the E-commerce application')
+    .setTitle('Auth Boiler Plate API')
+    .setDescription('API documentation for the Auth Boiler Plate application')
     .setVersion('1.0')
     .addTag('auth', 'Authentication related endpoints')
     .addBearerAuth(
@@ -68,7 +68,7 @@ async function bootstrap() {
       tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-    customSiteTitle: 'E-commerce API Documentation',
+    customSiteTitle: 'Auth Boiler Plate API Documentation',
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
     customCss: `
       .swagger-ui .topbar { display: none }

@@ -1,12 +1,23 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiExcludeEndpoint,
+  ApiNotFoundResponse,
+} from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -14,10 +25,47 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
+import { SendResetLinkDto } from './dto/send-reset-link.dto';
+import { VerifyTokenDto } from './dto/verify-token.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Request } from 'express';
+import { OAuthUser } from './interfaces/oauth-user.interface';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiExcludeEndpoint()
+  async googleAuth(): Promise<void> {
+    return;
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiExcludeEndpoint()
+  async googleCallback(
+    @Req() req: Request & { user: OAuthUser },
+  ): Promise<AuthResponseDto> {
+    return await this.authService.oauthLogin(req.user);
+  }
+
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  @ApiExcludeEndpoint()
+  async githubAuth(): Promise<void> {
+    return;
+  }
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  @ApiExcludeEndpoint()
+  async githubCallback(
+    @Req() req: Request & { user: OAuthUser },
+  ): Promise<AuthResponseDto> {
+    return await this.authService.oauthLogin(req.user);
+  }
 
   // register api
   @Post('register')
@@ -74,7 +122,7 @@ export class AuthController {
     return await this.authService.refreshTokens(userId);
   }
 
-  //   logout
+  // logout
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -98,7 +146,7 @@ export class AuthController {
     return await this.authService.login(loginDto);
   }
 
-  //   logout user and invalidate refresh token
+  // logout user and invalidate refresh token
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
@@ -122,5 +170,66 @@ export class AuthController {
   async logout(@GetUser('id') userId: string): Promise<{ message: string }> {
     await this.authService.logout(userId);
     return { message: 'Successfully logged out' };
+  }
+
+  // send reset password link
+  @Post('send-reset-link')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send reset password',
+    description: 'send reset password email with token',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reset link send successfully',
+    type: SendResetLinkDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'User not found',
+  })
+  async sendLink(@Body() sendResetLinkDto: SendResetLinkDto) {
+    return await this.authService.sendLink(sendResetLinkDto);
+  }
+
+  // verify password reset token
+  @Post('verify-reset-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify Reset Token',
+    description: 'Verify password reset token',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token verified',
+  })
+  @ApiBadRequestResponse({
+    description: 'Token expired ',
+  })
+  @ApiNotFoundResponse({
+    description: 'Token not found',
+  })
+  async verifyToken(@Body() verifyTokenDto: VerifyTokenDto) {
+    return await this.authService.verifyToken(verifyTokenDto);
+  }
+
+  // reset password using token
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset Password',
+    description: 'Reset user password using a valid token',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password successfully reset',
+  })
+  @ApiBadRequestResponse({
+    description: 'Token expired ',
+  })
+  @ApiNotFoundResponse({
+    description: 'Token not found',
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.resetPassword(resetPasswordDto);
   }
 }
